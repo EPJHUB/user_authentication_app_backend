@@ -1,8 +1,10 @@
 const catchError = require("../utils/catchError");
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const { sendEmail } = require("../utils/sendEmail");
 const EmailCode = require("../models/emailCode");
+const { json } = require("sequelize");
 
 const getAll = catchError(async (req, res) => {
   const results = await User.findAll();
@@ -15,13 +17,11 @@ const create = catchError(async (req, res) => {
   const newBody = { ...req.body, password: hashedPassword };
   const result = await User.create(newBody);
 
-  const code = require('crypto').randomBytes(64).toString('hex');
-  await EmailCode.create(
-    {
-        code: code,
-        userId: result.id
-    }
-  )
+  const code = require("crypto").randomBytes(64).toString("hex");
+  await EmailCode.create({
+    code: code,
+    userId: result.id,
+  });
 
   sendEmail({
     to: email,
@@ -72,13 +72,37 @@ const update = catchError(async (req, res) => {
 });
 
 const verifyUser = catchError(async (req, res) => {
-    const { code } = req.params;
-    const userCode = await EmailCode.findOne({where: {code}})
-    if(!userCode) return res.status(401).json({error: "User not found"})
-    console.log(userCode)
-    // const user = await User.findByPk(userCode)
-    return res.json(userCode)
+  const { code } = req.params;
+  const userCode = await EmailCode.findOne({ where: { code } });
+  if (!userCode) return res.status(401).json({ error: "User not found" });
+  // console.log(userCode)
+  const user = await User.findByPk(userCode.userId);
+  await user.update({ isVerifed: true });
+  await userCode.destroy();
+  return res.json(user);
 });
+
+const login = catchError(async (req, res) => {
+  const { password, email } = req.body;
+  const user = await User.findOne({ where: { email } });
+  if (!user) return res.sendStatus(401).json({ error: "User not found" });
+  const isValid = await bcrypt.compare(password, user.password);
+  if (!isValid || !user.isVerifed)
+    return res.sendStatus(401).json({ error: "Unauthorized" });
+  const token = jwt.sign(
+    { user }, 
+    process.env.TOKEN_SECRET,
+    {expiresIn: "1d"}
+    );
+
+  return res.json({ user, token });
+});
+
+const logged = catchError(async (req, res) => {
+  const user = req.user
+  if(!user) return res.sendStatus(401);
+  return res.json(user)
+})
 
 module.exports = {
   getAll,
@@ -86,5 +110,7 @@ module.exports = {
   getOne,
   remove,
   update,
-  verifyUser
+  verifyUser,
+  login,
+  logged
 };
