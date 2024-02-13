@@ -126,7 +126,7 @@ const requestResetPassword = catchError(async (req, res) => {
           <p style="font-size: 18px; line-height: 1.6; margin-bottom: 25px; text-align: center;">Se ha solicitado el restablecimiento de contraseña, haga clic en el siguiente enlace:</p>
           
           <div style="text-align: center;">
-              <a href="${frontBaseUrl}/reset_password/${code}" style="display: inline-block; background-color: #007BFF; color: #ffffff; text-align: center; padding: 14px 28px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 18px;">¡Verificar cuenta!</a>
+              <a href="${frontBaseUrl}/reset_password/${code}" style="display: inline-block; background-color: #007BFF; color: #ffffff; text-align: center; padding: 14px 28px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 18px;">¡Restablecer contraseña!</a>
           </div>
         </div>
     `,
